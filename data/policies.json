@@ -1,0 +1,321 @@
+{
+  "rules": [
+    {
+      "rule_id": "RULE-CANCEL-AIRLINE-01",
+      "title": "Airline-Caused Cancellation Entitlement",
+      "source_text": "If a flight is cancelled by the airline: Customer may choose free rebooking on the next available flight within 24 hours OR customer may choose a full refund. This is the customer's choice.",
+      "conditions": {
+        "booking_status": "cancelled",
+        "cause": "airline_operational"
+      },
+      "permitted_actions": [
+        "free_rebooking_next_available_within_24h",
+        "full_refund_to_original_payment_method"
+      ],
+      "restrictions": [
+        "Customer must choose one option (mutually exclusive)",
+        "Rebooking must be on next available flight within 24 hours",
+        "Rebooking must be at no charge"
+      ],
+      "escalation_behavior": "none"
+    },
+    {
+      "rule_id": "RULE-REFUND-PROCESS-01",
+      "title": "Refund Processing Constraints",
+      "source_text": "Refund is processed in full within 7 business days. Refund must be issued to the original payment method. The agent must not process a refund to a different payment method.",
+      "conditions": {
+        "refund_authorized": true
+      },
+      "permitted_actions": [
+        "initiate_refund_to_original_payment_method"
+      ],
+      "restrictions": [
+        "Full refund within 7 business days",
+        "Must be to original payment method ONLY",
+        "Cannot refund to different payment method"
+      ],
+      "escalation_behavior": "required_if_different_payment_method"
+    },
+    {
+      "rule_id": "RULE-DELAY-COMP-TIER1",
+      "title": "Delay Under 3 Hours Compensation",
+      "source_text": "Delay under 3 hours → ₹500 meal voucher",
+      "conditions": {
+        "booking_status": "delayed",
+        "delay_condition": "delay_hours < 3.0"
+      },
+      "permitted_actions": [
+        "issue_meal_voucher_500"
+      ],
+      "restrictions": [],
+      "escalation_behavior": "none"
+    },
+    {
+      "rule_id": "RULE-DELAY-COMP-TIER2",
+      "title": "Delay More Than 3 Hours Compensation",
+      "source_text": "Delay more than 3 hours → meal voucher + lounge access",
+      "conditions": {
+        "booking_status": "delayed",
+        "delay_condition": "delay_hours > 3.0"
+      },
+      "permitted_actions": [
+        "issue_meal_voucher_500",
+        "provide_lounge_access"
+      ],
+      "restrictions": [],
+      "escalation_behavior": "none",
+      "notes": "Source explicitly states 'meal voucher + lounge access'. Meal voucher appears to be the ₹500 voucher from Tier 1."
+    },
+    {
+      "rule_id": "RULE-DELAY-COMP-TIER3",
+      "title": "Delay More Than 5 Hours Compensation",
+      "source_text": "Delay more than 5 hours → meal voucher + hotel accommodation covering only the delayed hours, not a full night's stay",
+      "conditions": {
+        "booking_status": "delayed",
+        "delay_condition": "delay_hours > 5.0"
+      },
+      "permitted_actions": [
+        "issue_meal_voucher_500",
+        "arrange_hotel_accommodation_delayed_hours"
+      ],
+      "restrictions": [
+        "Hotel accommodation covers delayed hours ONLY",
+        "NOT a full night's stay"
+      ],
+      "escalation_behavior": "none",
+      "notes": "Source does NOT mention lounge access in Tier 3. Whether Tier 3 includes lounge access is POLICY_UNSPECIFIED (see AMBIGUITY-02)."
+    },
+    {
+      "rule_id": "RULE-FARE-DIFF-AUTHORITY",
+      "title": "Fare Difference Waiver Authority Limit",
+      "source_text": "If a customer voluntarily chooses to rebook onto a higher-fare flight: Customer must pay the fare difference. Agent cannot waive a fare difference above ₹1,500 without supervisor approval.",
+      "conditions": {
+        "voluntary_rebook": true,
+        "higher_fare_flight": true
+      },
+      "permitted_actions": [],
+      "restrictions": [
+        "Customer must pay fare difference",
+        "Agent cannot waive amounts above ₹1,500 without supervisor approval"
+      ],
+      "escalation_behavior": "required_if_above_1500",
+      "notes": "Source states agent CANNOT waive above ₹1,500. It does NOT explicitly state agent CAN or MUST waive amounts ≤₹1,500. This is an inference, not explicit source statement."
+    },
+    {
+      "rule_id": "RULE-LOYALTY-PRIORITY",
+      "title": "Loyalty Tier Priority Rebooking",
+      "source_text": "Gold customers receive priority rebooking. Platinum customers receive priority rebooking. Gold and Platinum do not receive additional compensation beyond the standard policy.",
+      "conditions": {
+        "loyalty_tier": ["Gold", "Platinum"]
+      },
+      "permitted_actions": [
+        "apply_priority_rebooking_flag"
+      ],
+      "restrictions": [
+        "NO additional compensation beyond standard policy",
+        "Priority applies to rebooking only"
+      ],
+      "escalation_behavior": "none",
+      "notes": "Silver tier is not mentioned. 'Priority rebooking' operational definition is POLICY_UNSPECIFIED."
+    },
+    {
+      "rule_id": "RULE-AGENT-AUTHORITY-REBOOK",
+      "title": "Agent Rebooking Authority",
+      "source_text": "Rebook an airline-caused cancelled flight on the next available flight within 24 hours at no charge.",
+      "conditions": {
+        "booking_status": "cancelled",
+        "cause": "airline_operational"
+      },
+      "permitted_actions": [
+        "rebook_next_available_within_24h"
+      ],
+      "restrictions": [
+        "Applies to CANCELLED flights ONLY",
+        "Must be airline-caused",
+        "Next available flight within 24 hours",
+        "At no charge"
+      ],
+      "escalation_behavior": "none",
+      "notes": "Source explicitly limits this to CANCELLED flights. Delayed flight rebooking is NOT explicitly authorized."
+    },
+    {
+      "rule_id": "RULE-AGENT-AUTHORITY-REFUND",
+      "title": "Agent Refund Initiation Authority",
+      "source_text": "Initiate a refund for an airline-caused cancellation.",
+      "conditions": {
+        "booking_status": "cancelled",
+        "cause": "airline_operational"
+      },
+      "permitted_actions": [
+        "initiate_refund_to_original_payment_method"
+      ],
+      "restrictions": [
+        "Applies to airline-caused cancellations ONLY",
+        "Must be to original payment method"
+      ],
+      "escalation_behavior": "none"
+    },
+    {
+      "rule_id": "RULE-ESCALATE-POLICY-EXCEPTION",
+      "title": "Mandatory Escalation - Compensation Beyond Policy",
+      "source_text": "Compensation beyond the stated policy.",
+      "conditions": {
+        "requested_compensation_not_in_policy": true
+      },
+      "permitted_actions": [],
+      "restrictions": [],
+      "escalation_behavior": "required",
+      "notes": "Any compensation not explicitly in Assignment 3 Data Pack requires escalation."
+    },
+    {
+      "rule_id": "RULE-ESCALATE-FARE-WAIVER",
+      "title": "Mandatory Escalation - Fare Difference Waiver Above ₹1,500",
+      "source_text": "Fare-difference waivers above ₹1,500.",
+      "conditions": {
+        "fare_difference": "> 1500"
+      },
+      "permitted_actions": [],
+      "restrictions": [],
+      "escalation_behavior": "required"
+    },
+    {
+      "rule_id": "RULE-ESCALATE-NON-AIRLINE",
+      "title": "Mandatory Escalation - Non-Airline-Caused Disruptions",
+      "source_text": "Exceptions for non-airline-caused disruptions.",
+      "conditions": {
+        "cause": "not airline_operational"
+      },
+      "permitted_actions": [],
+      "restrictions": [],
+      "escalation_behavior": "required"
+    },
+    {
+      "rule_id": "RULE-ESCALATE-LEGAL",
+      "title": "Mandatory Escalation - Legal Action Threats",
+      "source_text": "Threats of legal action.",
+      "conditions": {
+        "legal_threat": true
+      },
+      "permitted_actions": [],
+      "restrictions": [],
+      "escalation_behavior": "required"
+    },
+    {
+      "rule_id": "RULE-ESCALATE-FORMAL-COMPLAINT",
+      "title": "Mandatory Escalation - Formal Complaints",
+      "source_text": "Formal complaints.",
+      "conditions": {
+        "formal_complaint": true
+      },
+      "permitted_actions": [],
+      "restrictions": [],
+      "escalation_behavior": "required"
+    },
+    {
+      "rule_id": "RULE-ESCALATE-PAYMENT-METHOD",
+      "title": "Mandatory Escalation - Refund to Different Payment Method",
+      "source_text": "Any request to refund to a payment method other than the original payment method.",
+      "conditions": {
+        "refund_to_different_payment_method": true
+      },
+      "permitted_actions": [],
+      "restrictions": [],
+      "escalation_behavior": "required"
+    }
+  ],
+  "ambiguities": [
+    {
+      "ambiguity_id": "AMBIGUITY-01",
+      "title": "Delay Threshold Boundaries",
+      "description": "Natural language 'under 3 hours', 'more than 3 hours', 'more than 5 hours' creates mathematical ambiguity at exact boundary values (3.0h, 5.0h).",
+      "unspecified_cases": [
+        "delay_hours == 3.0",
+        "delay_hours == 5.0"
+      ],
+      "source_gap": "Source does not explicitly define behavior at exact boundaries."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-02",
+      "title": "Delay Tier 3 Lounge Access",
+      "description": "Source states Tier 3 (>5h) provides 'meal voucher + hotel accommodation' but does NOT mention lounge access. Whether Tier 3 also includes lounge access from Tier 2 is unspecified.",
+      "unspecified_cases": [
+        "delay_hours > 5.0: lounge_access included?"
+      ],
+      "source_gap": "Source does not explicitly state whether benefits accumulate across tiers."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-03",
+      "title": "Agent Authority for Delayed Flight Rebooking",
+      "description": "Source explicitly authorizes agent rebooking for 'airline-caused cancelled flight' but does NOT explicitly authorize rebooking for delayed flights.",
+      "unspecified_cases": [
+        "Can agent rebook customers on delayed flights to alternate flights?"
+      ],
+      "source_gap": "Rebooking authority scope limited to cancelled flights in source."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-04",
+      "title": "Fare Difference Waiver Applicability Context",
+      "description": "Source mentions 'voluntarily chooses to rebook' but does not specify whether this applies only to customer-initiated upgrades or also to airline-initiated rebookings that result in higher fares.",
+      "unspecified_cases": [
+        "When does fare difference waiver authority apply?"
+      ],
+      "source_gap": "Context scope not fully defined."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-05",
+      "title": "Next Available Flight Definition",
+      "description": "Source uses phrase 'next available flight within 24 hours' without operational definition.",
+      "unspecified_cases": [
+        "What defines 'next available'?",
+        "24 hours from what reference point?"
+      ],
+      "source_gap": "Operational definition not provided."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-06",
+      "title": "Full Refund Scope",
+      "description": "Source states 'full refund' but does not define scope (base fare? taxes? fees? baggage?).",
+      "unspecified_cases": [
+        "What is included in 'full refund'?"
+      ],
+      "source_gap": "Financial definition not provided."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-07",
+      "title": "Business Days Definition",
+      "description": "Source states refund processed 'within 7 business days' but does not define business days (jurisdiction, holidays).",
+      "unspecified_cases": [
+        "Which calendar defines business days?"
+      ],
+      "source_gap": "Calendar definition not provided."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-08",
+      "title": "Original Payment Method Definition",
+      "description": "Source requires refund to 'original payment method' but does not define this technically.",
+      "unspecified_cases": [
+        "What if payment method expired/closed?"
+      ],
+      "source_gap": "Technical definition not provided."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-09",
+      "title": "Delayed Hours Hotel Accommodation Duration",
+      "description": "Source states hotel 'covering only the delayed hours' but does not provide operational definition.",
+      "unspecified_cases": [
+        "How is hotel duration calculated?",
+        "What about check-in/check-out minimums?"
+      ],
+      "source_gap": "Operational definition not provided."
+    },
+    {
+      "ambiguity_id": "AMBIGUITY-10",
+      "title": "Priority Rebooking Operational Definition",
+      "description": "Source states Gold/Platinum receive 'priority rebooking' but does not define this operationally.",
+      "unspecified_cases": [
+        "What does priority mean in practice?"
+      ],
+      "source_gap": "Operational definition not provided."
+    }
+  ]
+}
